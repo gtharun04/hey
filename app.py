@@ -13,7 +13,6 @@ Default model: llama-3.3-70b-versatile (replacement for deprecated llama3-70b-81
 
 from __future__ import annotations
 
-import base64
 import html
 import json
 
@@ -21,13 +20,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from agent import AIBuddy, DEFAULT_MODEL
-
-def get_base64_image(path: str) -> str:
-    try:
-        with open(path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
-    except Exception:
-        return ""
 
 # ---------------------------------------------------------------------------
 # Page config & dark theme
@@ -55,11 +47,49 @@ PASTEL_CSS = """
     
     /* Ultimate app containers for full-bleed dark gradient background */
     [data-testid="stAppViewContainer"], .stApp, .main {
-        background: radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-                    radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
-                    #0b0f19 !important;
+        background: #0b0f19 !important;
         color: #f1f5f9 !important;
-        transition: background 0.5s ease;
+        overflow: hidden !important;
+        position: relative !important;
+    }
+
+    /* Drifting background circles using CSS animations */
+    [data-testid="stAppViewContainer"]::before, [data-testid="stAppViewContainer"]::after {
+        content: "";
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        filter: blur(120px);
+        opacity: 0.12;
+        z-index: 0;
+        pointer-events: none;
+    }
+    
+    [data-testid="stAppViewContainer"]::before {
+        background: #8b5cf6;
+        top: 15%;
+        left: 5%;
+        animation: floatBlob1 20s infinite alternate ease-in-out;
+    }
+    
+    [data-testid="stAppViewContainer"]::after {
+        background: #06b6d4;
+        bottom: 15%;
+        right: 5%;
+        animation: floatBlob2 24s infinite alternate ease-in-out;
+    }
+    
+    @keyframes floatBlob1 {
+        0% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(40px, 30px) scale(1.15); }
+        100% { transform: translate(-20px, 40px) scale(0.9); }
+    }
+    
+    @keyframes floatBlob2 {
+        0% { transform: translate(0, 0) scale(1.1); }
+        50% { transform: translate(-30px, -40px) scale(0.9); }
+        100% { transform: translate(40px, 20px) scale(1.15); }
     }
 
     /* Force section layout wrapper to be transparent */
@@ -73,25 +103,8 @@ PASTEL_CSS = """
     .buddy-header {
         text-align: center;
         padding: 1.5rem 0 0.5rem;
-    }
-    
-    .header-logo-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 0.25rem;
-    }
-    
-    .header-logo {
-        width: 72px;
-        height: 72px;
-        object-fit: contain;
-        filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.6));
-        animation: logoFloat 4s ease-in-out infinite;
-    }
-    
-    @keyframes logoFloat {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-4px); }
+        z-index: 1;
+        position: relative;
     }
     
     .buddy-header h1 {
@@ -121,47 +134,6 @@ PASTEL_CSS = """
         justify-content: center;
     }
     
-    /* Strip Streamlit's default white docked background for the chat input using multiple parent selectors */
-    div:has(> [data-testid="stChatInput"]),
-    div:has(> div > [data-testid="stChatInput"]),
-    div[class*="stChatInput"] {
-        background-color: transparent !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    
-    /* Make chat input container blend in transparently with a glossy glass effect */
-    [data-testid="stChatInput"] {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 20px !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
-        padding: 4px 12px !important;
-    }
-    
-    /* Make all inner wrappers transparent */
-    [data-testid="stChatInput"] div {
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    
-    /* Textarea styling */
-    [data-testid="stChatInput"] textarea {
-        background: transparent !important;
-        color: #f8fafc !important;
-        font-size: 0.92rem !important;
-        border: none !important;
-    }
-    
-    [data-testid="stChatInput"] textarea:focus {
-        box-shadow: none !important;
-    }
-    
     .voice-panel {
         background: transparent;
         border: none;
@@ -171,6 +143,8 @@ PASTEL_CSS = """
         display: flex;
         justify-content: center;
         width: 100%;
+        z-index: 1;
+        position: relative;
     }
     
     div[data-testid="stSidebar"] {
@@ -224,6 +198,8 @@ PASTEL_CSS = """
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
+        z-index: 1;
+        position: relative;
     }
     
     .siri-user-query {
@@ -287,57 +263,6 @@ PASTEL_CSS = """
         box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important;
     }
     
-    /* Empty State Hero Orb */
-    .hero-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem 0;
-        text-align: center;
-        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-    
-    .floating-orb-wrapper {
-        position: relative;
-        width: clamp(200px, 38vw, 260px);
-        height: clamp(200px, 38vw, 260px);
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
-    }
-    
-    .hero-orb-image {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        filter: drop-shadow(0 15px 35px rgba(99, 102, 241, 0.35));
-        animation: floatOrb 6s ease-in-out infinite;
-    }
-    
-    @keyframes floatOrb {
-        0%, 100% {
-            transform: translateY(0) rotate(0deg) scale(1);
-        }
-        50% {
-            transform: translateY(-8px) rotate(1.5deg) scale(1.02);
-        }
-    }
-    
-    .hero-title {
-        font-size: clamp(1.2rem, 3.5vw, 1.45rem);
-        color: #94a3b8;
-        font-weight: 500;
-        letter-spacing: -0.01em;
-        opacity: 0.95;
-        background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(12px); }
         to { opacity: 1; transform: translateY(0); }
@@ -376,16 +301,28 @@ if "voice" in st.query_params:
     del st.query_params["voice"]
 
 # ---------------------------------------------------------------------------
-# Header
+# Header & Dynamic Iframe Permissions
 # ---------------------------------------------------------------------------
-base64_orb = get_base64_image("assets/ai_orb_illustration.png")
-
-logo_html = ""
-if base64_orb:
-    logo_html = f'<div class="header-logo-container"><img src="data:image/png;base64,{base64_orb}" class="header-logo" alt="Aurora AI Logo"></div>'
-
-header_html = f'<div class="buddy-header">{logo_html}<h1>Aurora AI</h1><p><span style="display:inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #10b981; animation: siriDotPulse 2s infinite;"></span>Empathy engine · Local memory · Voice companion</p></div>'
+header_html = '<div class="buddy-header"><h1 style="margin: 0; color: #f1f5f9;">AI Buddy</h1><p style="margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; justify-content: center;"><span style="display:inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #10b981; animation: siriDotPulse 2s infinite;"></span>Listening</p></div>'
 st.markdown(header_html, unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <script>
+        const fixIframes = () => {
+            document.querySelectorAll('iframe').forEach(iframe => {
+                if (!iframe.hasAttribute('allow') || !iframe.getAttribute('allow').includes('microphone')) {
+                    iframe.setAttribute('allow', 'microphone');
+                    iframe.src = iframe.src;
+                }
+            });
+        };
+        fixIframes();
+        setInterval(fixIframes, 1000);
+    </script>
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------------------------------------------------------------------------
 # Sidebar — memory & controls
@@ -464,74 +401,69 @@ components.html(
     width: 100%; 
   }
   #speakBtn {
-    width: 84px;
-    height: 84px;
+    width: 80px;
+    height: 80px;
     border: none;
     border-radius: 50%;
-    font-size: 0rem;
     cursor: pointer;
-    background: linear-gradient(135deg, #c084fc, #8b5cf6, #3b82f6, #06b6d4);
-    background-size: 300% 300%;
+    background: #7c3aed;
     color: white;
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.35), 0 0 25px rgba(59, 130, 246, 0.2);
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     outline: none;
     position: relative;
-    animation: gradientShift 6s ease infinite;
     touch-action: manipulation;
-  }
-  
-  /* 3D Glass Sheen reflection overlay for speakBtn */
-  #speakBtn::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%);
-    z-index: 2;
-    pointer-events: none;
-  }
-  
-  /* Outer expanding ring layer */
-  #speakBtn::after {
-    content: "";
-    position: absolute;
-    top: -4px; left: -4px; right: -4px; bottom: -4px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #c084fc, #8b5cf6, #3b82f6, #06b6d4);
-    z-index: -1;
-    opacity: 0.3;
-    transition: all 0.3s ease;
   }
   
   /* Icon container inside orb */
   #speakBtn .btn-icon {
     font-size: 2.1rem;
-    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
     z-index: 1;
     transition: all 0.3s ease;
   }
   
   #speakBtn.listening {
-    animation: gradientShift 2s ease infinite;
-    box-shadow: 0 0 35px rgba(139, 92, 246, 0.5), 0 0 50px rgba(6, 182, 212, 0.35);
-  }
-  #speakBtn.listening::after {
-    animation: siriRing 1.5s infinite cubic-bezier(0.25, 0, 0, 1);
-    opacity: 0.8;
+    background: #ec4899;
+    animation: simplePulse 1.5s infinite ease-in-out;
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.5);
   }
   
-  @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  @keyframes simplePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
   }
-  @keyframes siriRing {
-    0% { transform: scale(1); opacity: 0.8; }
-    100% { transform: scale(1.45); opacity: 0; }
+  #status {
+    width: 100%;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 10px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: color 0.3s;
+  }
+  
+  /* Frosted Glossy Glass panel for transcript display */
+  #transcript {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    color: #c084fc;
+    font-size: 0.92rem;
+    font-style: italic;
+    font-weight: 500;
+    display: none;
+    line-height: 1.35;
+    text-align: center;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   }
   #status {
     width: 100%;
@@ -647,12 +579,9 @@ components.html(
       recognition.onstart = () => {
         speakBtn.classList.add('listening');
         
-        // GSAP transition for listening start
-        gsap.to(speakBtn, { scale: 1.15, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-        gsap.to(btnIcon, { rotation: 45, scale: 0.9, duration: 0.3 });
         gsap.fromTo(statusEl, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.3 });
         
-        btnIcon.textContent = "⚡";
+        btnIcon.textContent = "🎤";
         statusEl.textContent = 'Listening...';
         transcriptEl.style.display = 'none';
         waveContainer.style.display = 'flex';
@@ -698,14 +627,11 @@ components.html(
 
       function resetBtn() {
         speakBtn.classList.remove('listening');
-        gsap.to(speakBtn, { scale: 1, duration: 0.4, ease: "power2.out" });
-        gsap.to(btnIcon, { rotation: 0, scale: 1, duration: 0.3 });
         btnIcon.textContent = "🎤";
         waveContainer.style.display = 'none';
         if (waveTimeline) {
           waveTimeline.pause();
         }
-        gsap.to('.bar', { height: 5, duration: 0.3, ease: "power2.out" });
       }
 
       speakBtn.addEventListener('click', () => {
@@ -806,9 +732,7 @@ if st.session_state.pending_voice:
     handle_user_message(voice_text)
     st.rerun()
 
-if prompt := st.chat_input("Message your buddy…"):
-    handle_user_message(prompt)
-    st.rerun()
+# Pure voice assistant model (no text input option)
 
 # ---------------------------------------------------------------------------
 # Text-to-Speech for latest assistant reply (Web Speech API — SpeechSynthesis)
