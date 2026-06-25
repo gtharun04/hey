@@ -309,6 +309,16 @@ st.markdown(header_html, unsafe_allow_html=True)
 st.markdown(
     """
     <script>
+        // Listen for voice transcript messages from STT iframe to bypass sandbox top-navigation blocks
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'voice_transcript') {
+                const url = new URL(window.location.href);
+                url.searchParams.set('voice', event.data.text);
+                window.location.href = url.toString();
+            }
+        });
+
+        // Grant microphone permissions dynamically
         const fixIframes = () => {
             document.querySelectorAll('iframe').forEach(iframe => {
                 if (!iframe.hasAttribute('allow') || !iframe.getAttribute('allow').includes('microphone')) {
@@ -401,69 +411,43 @@ components.html(
     width: 100%; 
   }
   #speakBtn {
-    width: 80px;
-    height: 80px;
-    border: none;
-    border-radius: 50%;
+    padding: 12px 36px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
     cursor: pointer;
-    background: #7c3aed;
-    color: white;
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
-    transition: all 0.3s ease;
-    display: flex;
+    background: rgba(139, 92, 246, 0.1);
+    color: #c084fc;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    outline: none;
-    position: relative;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
     touch-action: manipulation;
   }
-  
-  /* Icon container inside orb */
-  #speakBtn .btn-icon {
-    font-size: 2.1rem;
-    z-index: 1;
-    transition: all 0.3s ease;
+  #speakBtn:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.25);
+    transform: translateY(-1.5px);
   }
   
   #speakBtn.listening {
-    background: #ec4899;
+    background: rgba(236, 72, 153, 0.15);
+    border-color: rgba(236, 72, 153, 0.6);
+    color: #f472b6;
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
     animation: simplePulse 1.5s infinite ease-in-out;
-    box-shadow: 0 0 30px rgba(236, 72, 153, 0.5);
   }
   
   @keyframes simplePulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-  }
-  #status {
-    width: 100%;
-    font-size: 0.8rem;
-    color: #94a3b8;
-    text-align: center;
-    margin-top: 10px;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    transition: color 0.3s;
-  }
-  
-  /* Frosted Glossy Glass panel for transcript display */
-  #transcript {
-    width: 100%;
-    margin-top: 10px;
-    padding: 8px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    color: #c084fc;
-    font-size: 0.92rem;
-    font-style: italic;
-    font-weight: 500;
-    display: none;
-    line-height: 1.35;
-    text-align: center;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    50% { transform: scale(1.03); }
   }
   #status {
     width: 100%;
@@ -516,7 +500,7 @@ components.html(
 </head>
 <body>
   <div class="row">
-    <button id="speakBtn" type="button"><span class="btn-icon">🎤</span></button>
+    <button id="speakBtn" type="button">Speak</button>
   </div>
   <div id="wave-container">
     <div class="bar" style="background:#c084fc"></div>
@@ -525,12 +509,11 @@ components.html(
     <div class="bar" style="background:#06b6d4"></div>
     <div class="bar" style="background:#2dd4bf"></div>
   </div>
-  <div id="status">Tap the microphone to speak</div>
+  <div id="status">Click 'Speak' to start</div>
   <div id="transcript"></div>
 
   <script>
     const speakBtn = document.getElementById('speakBtn');
-    const btnIcon = speakBtn.querySelector('.btn-icon');
     const statusEl = document.getElementById('status');
     const transcriptEl = document.getElementById('transcript');
     const waveContainer = document.getElementById('wave-container');
@@ -541,7 +524,7 @@ components.html(
     // Hover magnetic animation with GSAP
     speakBtn.addEventListener('mouseenter', () => {
       if (!speakBtn.classList.contains('listening')) {
-        gsap.to(speakBtn, { scale: 1.08, duration: 0.3, ease: "power2.out" });
+        gsap.to(speakBtn, { scale: 1.03, duration: 0.3, ease: "power2.out" });
       }
     });
     speakBtn.addEventListener('mouseleave', () => {
@@ -578,10 +561,10 @@ components.html(
 
       recognition.onstart = () => {
         speakBtn.classList.add('listening');
+        speakBtn.textContent = 'Listening...';
         
         gsap.fromTo(statusEl, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.3 });
         
-        btnIcon.textContent = "🎤";
         statusEl.textContent = 'Listening...';
         transcriptEl.style.display = 'none';
         waveContainer.style.display = 'flex';
@@ -621,13 +604,13 @@ components.html(
           statusEl.textContent = 'Sending message to buddy...';
           sendVoiceMessage(text);
         } else {
-          statusEl.textContent = 'Tap the microphone to speak';
+          statusEl.textContent = "Click 'Speak' to start";
         }
       };
 
       function resetBtn() {
         speakBtn.classList.remove('listening');
-        btnIcon.textContent = "🎤";
+        speakBtn.textContent = 'Speak';
         waveContainer.style.display = 'none';
         if (waveTimeline) {
           waveTimeline.pause();
@@ -643,20 +626,9 @@ components.html(
       function sendVoiceMessage(text) {
         try {
           speakBtn.disabled = true;
-          let parentUrl;
-          try {
-            parentUrl = window.parent.location.href;
-          } catch (e) {
-            parentUrl = document.referrer;
-          }
-          if (!parentUrl || parentUrl === 'about:srcdoc') {
-            parentUrl = window.location.href;
-          }
-          const url = new URL(parentUrl);
-          url.searchParams.set('voice', text);
-          window.top.location.href = url.toString();
+          window.parent.postMessage({ type: 'voice_transcript', text: text }, '*');
         } catch (_) {
-          statusEl.textContent = 'Browser blocked connection. Please type in the box below.';
+          statusEl.textContent = 'Browser blocked connection.';
           speakBtn.disabled = false;
         }
       }
@@ -665,7 +637,7 @@ components.html(
 </body>
 </html>
     """,
-    height=180,
+    height=120,
 )
 st.markdown("</div>", unsafe_allow_html=True)
 
