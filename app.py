@@ -147,6 +147,92 @@ PASTEL_CSS = """
         position: relative;
     }
     
+    #speakBtn {
+        padding: 12px 36px;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 8px;
+        cursor: pointer;
+        background: rgba(139, 92, 246, 0.1);
+        color: #c084fc;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        outline: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
+        touch-action: manipulation;
+    }
+    #speakBtn:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.5);
+        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.25);
+        transform: translateY(-1.5px);
+    }
+    #speakBtn.listening {
+        background: rgba(236, 72, 153, 0.15) !important;
+        border-color: rgba(236, 72, 153, 0.6) !important;
+        color: #f472b6 !important;
+        box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+        animation: simplePulse 1.5s infinite ease-in-out;
+    }
+    @keyframes simplePulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+    }
+    #status {
+        width: 100%;
+        font-size: 0.8rem;
+        color: #94a3b8;
+        text-align: center;
+        margin-top: 10px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        transition: color 0.3s;
+    }
+    #transcript {
+        width: 100%;
+        margin-top: 10px;
+        padding: 8px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        color: #c084fc;
+        font-size: 0.92rem;
+        font-style: italic;
+        font-weight: 500;
+        display: none;
+        line-height: 1.35;
+        text-align: center;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+    #wave-container {
+        display: none;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        margin-top: 10px;
+        height: 18px;
+    }
+    .bar {
+        width: 4px;
+        height: 6px;
+        background: #8b5cf6;
+        border-radius: 99px;
+        transition: height 0.1s ease;
+    }
+
+    /* Hide the voice input widget completely */
+    div[data-testid="stTextInput"] {
+        display: none !important;
+    }
+    
     div[data-testid="stSidebar"] {
         background: rgba(11, 15, 25, 0.7) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
@@ -267,7 +353,7 @@ PASTEL_CSS = """
         from { opacity: 0; transform: translateY(12px); }
         to { opacity: 1; transform: translateY(0); }
     }
-
+ 
     @media (max-width: 640px) {
         .buddy-header {
             padding: 0.5rem 0 !important;
@@ -276,7 +362,7 @@ PASTEL_CSS = """
 </style>
 """
 st.markdown(PASTEL_CSS, unsafe_allow_html=True)
-
+ 
 # ---------------------------------------------------------------------------
 # Session state
 # ---------------------------------------------------------------------------
@@ -292,47 +378,12 @@ if "last_spoken" not in st.session_state:
     st.session_state.last_spoken = ""
 if "pending_voice" not in st.session_state:
     st.session_state.pending_voice = ""
-
-# Voice input via query param (set by embedded JS component)
-if "voice" in st.query_params:
-    _voice_param = st.query_params["voice"]
-    if _voice_param:
-        st.session_state.pending_voice = _voice_param
-    del st.query_params["voice"]
-
+ 
 # ---------------------------------------------------------------------------
-# Header & Dynamic Iframe Permissions
+# Header (Completely Minimal)
 # ---------------------------------------------------------------------------
-header_html = '<div class="buddy-header"><h1 style="margin: 0; color: #f1f5f9;">AI Buddy</h1><p style="margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; justify-content: center;"><span style="display:inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #10b981; animation: siriDotPulse 2s infinite;"></span>Listening</p></div>'
+header_html = '<div class="buddy-header"><h1 style="margin: 0; color: #f1f5f9;">AI Buddy</h1></div>'
 st.markdown(header_html, unsafe_allow_html=True)
-
-st.markdown(
-    """
-    <script>
-        // Listen for voice transcript messages from STT iframe to bypass sandbox top-navigation blocks
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'voice_transcript') {
-                const url = new URL(window.location.href);
-                url.searchParams.set('voice', event.data.text);
-                window.location.href = url.toString();
-            }
-        });
-
-        // Grant microphone permissions dynamically
-        const fixIframes = () => {
-            document.querySelectorAll('iframe').forEach(iframe => {
-                if (!iframe.hasAttribute('allow') || !iframe.getAttribute('allow').includes('microphone')) {
-                    iframe.setAttribute('allow', 'microphone');
-                    iframe.src = iframe.src;
-                }
-            });
-        };
-        fixIframes();
-        setInterval(fixIframes, 1000);
-    </script>
-    """,
-    unsafe_allow_html=True
-)
 
 # ---------------------------------------------------------------------------
 # Sidebar — memory & controls
@@ -379,265 +430,156 @@ if not st.session_state.buddy:
 buddy: AIBuddy = st.session_state.buddy
 
 # ---------------------------------------------------------------------------
-# Voice input component (Web Speech API — SpeechRecognition)
-# -------------------------------------------------------st.markdown('<div class="voice-panel">', unsafe_allow_html=True)
+# Hidden Text Input for bi-directional communication
+# ---------------------------------------------------------------------------
+voice_input = st.text_input(
+    "Voice Input",
+    key="voice_input",
+    label_visibility="collapsed",
+)
+
+# ---------------------------------------------------------------------------
+# Voice input component (Web Speech API — SpeechRecognition running natively)
+# ---------------------------------------------------------------------------
 st.markdown('<div class="voice-panel">', unsafe_allow_html=True)
-components.html(
+st.markdown(
     """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: transparent;
-    color: #94a3b8;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  .row { 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    width: 100%; 
-  }
-  #speakBtn {
-    padding: 12px 36px;
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 8px;
-    cursor: pointer;
-    background: rgba(139, 92, 246, 0.1);
-    color: #c084fc;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    outline: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
-    touch-action: manipulation;
-  }
-  #speakBtn:hover {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.5);
-    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.25);
-    transform: translateY(-1.5px);
-  }
-  
-  #speakBtn.listening {
-    background: rgba(236, 72, 153, 0.15);
-    border-color: rgba(236, 72, 153, 0.6);
-    color: #f472b6;
-    box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
-    animation: simplePulse 1.5s infinite ease-in-out;
-  }
-  
-  @keyframes simplePulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.03); }
-  }
-  #status {
-    width: 100%;
-    font-size: 0.8rem;
-    color: #94a3b8;
-    text-align: center;
-    margin-top: 10px;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    transition: color 0.3s;
-  }
-  
-  /* Frosted Glossy Glass panel for transcript display */
-  #transcript {
-    width: 100%;
-    margin-top: 10px;
-    padding: 8px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    color: #c084fc;
-    font-size: 0.92rem;
-    font-style: italic;
-    font-weight: 500;
-    display: none;
-    line-height: 1.35;
-    text-align: center;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  }
-  
-  /* Bouncing voice bars inside STT element */
-  #wave-container {
-    display: none;
-    justify-content: center;
-    align-items: center;
-    gap: 4px;
-    margin-top: 10px;
-    height: 18px;
-  }
-  .bar {
-    width: 4px;
-    height: 6px;
-    background: #8b5cf6;
-    border-radius: 99px;
-    transition: background 0.3s;
-  }
-</style>
-</head>
-<body>
-  <div class="row">
-    <button id="speakBtn" type="button">Speak</button>
-  </div>
-  <div id="wave-container">
-    <div class="bar" style="background:#c084fc"></div>
-    <div class="bar" style="background:#8b5cf6"></div>
-    <div class="bar" style="background:#3b82f6"></div>
-    <div class="bar" style="background:#06b6d4"></div>
-    <div class="bar" style="background:#2dd4bf"></div>
-  </div>
-  <div id="status">Click 'Speak' to start</div>
-  <div id="transcript"></div>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+      <div class="row" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+        <button id="speakBtn" type="button">Speak</button>
+      </div>
+      <div id="wave-container">
+        <div class="bar" style="background:#c084fc"></div>
+        <div class="bar" style="background:#8b5cf6"></div>
+        <div class="bar" style="background:#3b82f6"></div>
+        <div class="bar" style="background:#06b6d4"></div>
+        <div class="bar" style="background:#2dd4bf"></div>
+      </div>
+      <div id="status">Click 'Speak' to start</div>
+      <div id="transcript"></div>
+    </div>
 
-  <script>
-    const speakBtn = document.getElementById('speakBtn');
-    const statusEl = document.getElementById('status');
-    const transcriptEl = document.getElementById('transcript');
-    const waveContainer = document.getElementById('wave-container');
-    let recognition = null;
-    let finalText = '';
-    let waveTimeline = null;
-
-    // Hover magnetic animation with GSAP
-    speakBtn.addEventListener('mouseenter', () => {
-      if (!speakBtn.classList.contains('listening')) {
-        gsap.to(speakBtn, { scale: 1.03, duration: 0.3, ease: "power2.out" });
-      }
-    });
-    speakBtn.addEventListener('mouseleave', () => {
-      if (!speakBtn.classList.contains('listening')) {
-        gsap.to(speakBtn, { scale: 1, duration: 0.3, ease: "power2.out" });
-      }
-    });
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      statusEl.textContent = 'Speech recognition not supported in this browser. Use Chrome or Edge.';
-      speakBtn.disabled = true;
-    } else {
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      // GSAP wave animation helper
-      function initWaveAnimation() {
-        waveTimeline = gsap.timeline({ repeat: -1 });
-        gsap.utils.toArray('.bar').forEach((bar, i) => {
-          waveTimeline.to(bar, {
-            height: 18,
-            duration: 0.4 + (i * 0.05),
-            ease: "sine.inOut",
-            repeat: -1,
-            yoyo: true
-          }, 0);
-        });
-        waveTimeline.pause();
-      }
-      initWaveAnimation();
-
-      recognition.onstart = () => {
-        speakBtn.classList.add('listening');
-        speakBtn.textContent = 'Listening...';
-        
-        gsap.fromTo(statusEl, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.3 });
-        
-        statusEl.textContent = 'Listening...';
-        transcriptEl.style.display = 'none';
-        waveContainer.style.display = 'flex';
-        
-        if (waveTimeline) {
-          waveTimeline.play();
+    <script>
+    (function() {
+      function init() {
+        const speakBtn = document.getElementById('speakBtn');
+        const statusEl = document.getElementById('status');
+        const transcriptEl = document.getElementById('transcript');
+        const waveContainer = document.getElementById('wave-container');
+        if (!speakBtn || !statusEl || !transcriptEl || !waveContainer) {
+          setTimeout(init, 100);
+          return;
         }
-        finalText = '';
-      };
 
-      recognition.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) finalText += t;
-          else interim += t;
-        }
-        const display = (finalText + interim).trim();
-        if (display) {
-          if (transcriptEl.style.display === 'none') {
-            transcriptEl.style.display = 'block';
-            gsap.fromTo(transcriptEl, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" });
-          }
-          transcriptEl.textContent = display;
-        }
-      };
+        let recognition = null;
+        let finalText = '';
 
-      recognition.onerror = (e) => {
-        statusEl.textContent = 'Error: ' + (e.error || 'unknown');
-        resetBtn();
-      };
-
-      recognition.onend = () => {
-        resetBtn();
-        const text = (finalText || transcriptEl.textContent).trim();
-        if (text) {
-          statusEl.textContent = 'Sending message to buddy...';
-          sendVoiceMessage(text);
-        } else {
-          statusEl.textContent = "Click 'Speak' to start";
-        }
-      };
-
-      function resetBtn() {
-        speakBtn.classList.remove('listening');
-        speakBtn.textContent = 'Speak';
-        waveContainer.style.display = 'none';
-        if (waveTimeline) {
-          waveTimeline.pause();
-        }
-      }
-
-      speakBtn.addEventListener('click', () => {
-        if (recognition) {
-          try { recognition.start(); } catch (_) { recognition.stop(); recognition.start(); }
-        }
-      });
-
-      function sendVoiceMessage(text) {
-        try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          statusEl.textContent = 'Speech recognition not supported in this browser. Use Chrome or Edge.';
           speakBtn.disabled = true;
-          window.parent.postMessage({ type: 'voice_transcript', text: text }, '*');
-        } catch (_) {
-          statusEl.textContent = 'Browser blocked connection.';
-          speakBtn.disabled = false;
+          return;
+        }
+
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        let waveInterval = null;
+        function startWaveAnimation() {
+          waveContainer.style.display = 'flex';
+          const bars = waveContainer.querySelectorAll('.bar');
+          waveInterval = setInterval(() => {
+            bars.forEach(bar => {
+              const h = Math.random() * 12 + 6;
+              bar.style.height = h + 'px';
+            });
+          }, 100);
+        }
+
+        function stopWaveAnimation() {
+          waveContainer.style.display = 'none';
+          if (waveInterval) {
+            clearInterval(waveInterval);
+            waveInterval = null;
+          }
+        }
+
+        recognition.onstart = () => {
+          speakBtn.classList.add('listening');
+          speakBtn.textContent = 'Listening...';
+          speakBtn.style.background = 'rgba(236, 72, 153, 0.15)';
+          speakBtn.style.borderColor = 'rgba(236, 72, 153, 0.6)';
+          speakBtn.style.color = '#f472b6';
+          
+          statusEl.textContent = 'Listening...';
+          transcriptEl.style.display = 'none';
+          startWaveAnimation();
+          finalText = '';
+        };
+
+        recognition.onresult = (event) => {
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const t = event.results[i][0].transcript;
+            if (event.results[i].isFinal) finalText += t;
+            else interim += t;
+          }
+          const display = (finalText + interim).trim();
+          if (display) {
+            transcriptEl.style.display = 'block';
+            transcriptEl.textContent = display;
+          }
+        };
+
+        recognition.onerror = (e) => {
+          statusEl.textContent = 'Error: ' + (e.error || 'unknown');
+          resetBtn();
+        };
+
+        recognition.onend = () => {
+          resetBtn();
+          const text = (finalText || transcriptEl.textContent).trim();
+          if (text) {
+            statusEl.textContent = 'Sending message to buddy...';
+            sendVoiceMessage(text);
+          } else {
+            statusEl.textContent = "Click 'Speak' to start";
+          }
+        };
+
+        function resetBtn() {
+          speakBtn.classList.remove('listening');
+          speakBtn.textContent = 'Speak';
+          speakBtn.style.transform = 'none';
+          speakBtn.style.background = 'rgba(139, 92, 246, 0.1)';
+          speakBtn.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+          speakBtn.style.color = '#c084fc';
+          stopWaveAnimation();
+        }
+
+        speakBtn.addEventListener('click', () => {
+          try { recognition.start(); } catch (_) { recognition.stop(); recognition.start(); }
+        });
+
+        function sendVoiceMessage(text) {
+          const input = document.querySelector('div[data-testid="stTextInput"] input') || window.parent.document.querySelector('div[data-testid="stTextInput"] input');
+          if (input) {
+            input.value = text;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            input.dispatchEvent(new Event('blur', { bubbles: true }));
+          } else {
+            statusEl.textContent = 'Connection error (widget not found).';
+          }
         }
       }
-    }
-  </script>
-</body>
-</html>
+      init();
+    })();
+    </script>
     """,
-    height=120,
+    unsafe_allow_html=True,
 )
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -665,17 +607,6 @@ if st.session_state.messages:
                 unsafe_allow_html=True
             )
     st.markdown('</div>', unsafe_allow_html=True)
-else:
-    st.markdown(
-        """
-        <div class="siri-container" style="text-align: center; margin-top: 1.5rem;">
-            <div class="siri-assistant-reply" style="font-size: 1.4rem; color: #94a3b8; font-weight: 500;">
-                How can I help you today?
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
 # ---------------------------------------------------------------------------
 # Process voice or typed input
@@ -698,10 +629,9 @@ def handle_user_message(prompt: str) -> None:
     st.session_state.last_spoken = result["reply"]
 
 
-if st.session_state.pending_voice:
-    voice_text = st.session_state.pending_voice
-    st.session_state.pending_voice = ""
-    handle_user_message(voice_text)
+if voice_input:
+    st.session_state.voice_input = ""
+    handle_user_message(voice_input)
     st.rerun()
 
 # Pure voice assistant model (no text input option)
@@ -711,34 +641,31 @@ if st.session_state.pending_voice:
 # ---------------------------------------------------------------------------
 if st.session_state.last_spoken:
     tts_text = json.dumps(st.session_state.last_spoken)
-    components.html(
+    st.markdown(
         f"""
-<!DOCTYPE html>
-<html><body style="margin:0;padding:0;background:transparent;">
-<script>
-(function() {{
-  const text = {tts_text};
-  if (!text || !window.speechSynthesis) return;
+        <script>
+        (function() {{
+          const text = {tts_text};
+          if (!text || !window.speechSynthesis) return;
 
-  function speak() {{
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.0;
-    u.pitch = 1.0;
-    u.lang = 'en-US';
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'))
-      || voices.find(v => v.lang.startsWith('en'));
-    if (preferred) u.voice = preferred;
-    window.speechSynthesis.speak(u);
-  }}
+          function speak() {{
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = 1.0;
+            u.pitch = 1.0;
+            u.lang = 'en-US';
+            const voices = window.speechSynthesis.getVoices();
+            const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'))
+              || voices.find(v => v.lang.startsWith('en'));
+            if (preferred) u.voice = preferred;
+            window.speechSynthesis.speak(u);
+          }}
 
-  if (window.speechSynthesis.getVoices().length) speak();
-  else window.speechSynthesis.onvoiceschanged = speak;
-}})();
-</script>
-</body></html>
+          if (window.speechSynthesis.getVoices().length) speak();
+          else window.speechSynthesis.onvoiceschanged = speak;
+        }})();
+        </script>
         """,
-        height=0,
+        unsafe_allow_html=True,
     )
     st.session_state.last_spoken = ""
