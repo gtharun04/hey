@@ -555,12 +555,20 @@ components.html(
       function sendVoiceMessage(text) {
         try {
           speakBtn.disabled = true;
-          const top = window.parent.location;
-          const url = new URL(top.href);
+          let parentUrl;
+          try {
+            parentUrl = window.parent.location.href;
+          } catch (e) {
+            parentUrl = document.referrer;
+          }
+          if (!parentUrl || parentUrl === 'about:srcdoc') {
+            parentUrl = window.location.href;
+          }
+          const url = new URL(parentUrl);
           url.searchParams.set('voice', text);
-          top.href = url.toString();
+          window.top.location.href = url.toString();
         } catch (_) {
-          statusEl.textContent = 'Error sending — please type instead.';
+          statusEl.textContent = 'Browser blocked connection. Please type in the box below.';
           speakBtn.disabled = false;
         }
       }
