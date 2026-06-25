@@ -115,6 +115,9 @@ PASTEL_CSS = """
         padding: 0;
         margin-bottom: 0.5rem;
         box-shadow: none;
+        display: flex;
+        justify-content: center;
+        width: 100%;
     }
     
     div[data-testid="stSidebar"] {
@@ -148,6 +151,55 @@ PASTEL_CSS = """
     div[data-testid="stSidebar"] button:hover {
         background-color: #fef2f2 !important;
         border-color: #fee2e2 !important;
+    }
+
+    /* Siri visual elements styling */
+    .siri-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        text-align: center;
+        width: 100%;
+    }
+    
+    .siri-user-query {
+        font-size: 1.05rem;
+        color: #8b5cf6;
+        font-style: italic;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+        max-width: 85%;
+        opacity: 0.85;
+        animation: fadeIn 0.4s ease-out;
+    }
+    
+    .siri-assistant-reply {
+        font-size: 1.35rem;
+        color: #1e293b;
+        font-weight: 600;
+        line-height: 1.4;
+        max-width: 90%;
+        margin-bottom: 0.5rem;
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    .siri-memory-tag {
+        font-size: 0.75rem;
+        color: #0d9488;
+        background: #f0fdfa;
+        border: 1px solid #ccfbfe;
+        border-radius: 8px;
+        padding: 4px 10px;
+        margin-top: 0.4rem;
+        display: inline-block;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     @media (max-width: 640px) {
@@ -246,8 +298,7 @@ buddy: AIBuddy = st.session_state.buddy
 
 # ---------------------------------------------------------------------------
 # Voice input component (Web Speech API — SpeechRecognition)
-# ---------------------------------------------------------------------------
-st.markdown('<div class="voice-panel">', unsafe_allow_html=True)
+# -------------------------------------------------------st.markdown('<div class="voice-panel">', unsafe_allow_html=True)
 components.html(
     """
 <!DOCTYPE html>
@@ -262,55 +313,60 @@ components.html(
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: transparent;
     color: #475569;
-    padding: 2px 4px;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    width: 100%; 
+  }
   #speakBtn {
-    flex: 1;
-    min-width: 130px;
-    padding: 10px 18px;
+    width: 85px;
+    height: 85px;
     border: none;
-    border-radius: 999px;
-    font-size: 0.9rem;
-    font-weight: 600;
+    border-radius: 50%;
+    font-size: 0rem;
     cursor: pointer;
     background: linear-gradient(135deg, #a78bfa, #8b5cf6);
     color: white;
-    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.15);
-    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 8px 16px rgba(139, 92, 246, 0.25);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
     touch-action: manipulation;
   }
-  #speakBtn:active { transform: scale(0.97); }
+  #speakBtn::before {
+    content: "🎤";
+    font-size: 2.2rem;
+  }
+  #speakBtn:active { transform: scale(0.95); }
   #speakBtn.listening {
     background: linear-gradient(135deg, #f87171, #ef4444);
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
-    animation: pulse 1.2s infinite;
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+    animation: siriPulse 1.5s infinite ease-in-out;
   }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
-    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+  #speakBtn.listening::before {
+    content: "🔴";
+    font-size: 2rem;
   }
-  #sendVoice {
-    padding: 10px 16px;
-    border: 1px solid #99f6e4;
-    border-radius: 999px;
-    background: #f0fdfa;
-    color: #0d9488;
-    font-weight: 600;
-    font-size: 0.88rem;
-    cursor: pointer;
-    display: none;
-    touch-action: manipulation;
-    transition: all 0.2s;
-  }
-  #sendVoice:hover {
-    background: #ccfbfe;
+  @keyframes siriPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
   }
   #status {
     width: 100%;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     color: #64748b;
-    min-height: 1em;
+    text-align: center;
     margin-top: 6px;
     font-weight: 500;
   }
@@ -321,26 +377,26 @@ components.html(
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     background: #ffffff;
-    color: #334155;
-    font-size: 0.88rem;
-    font-family: inherit;
+    color: #8b5cf6;
+    font-size: 0.9rem;
+    font-style: italic;
+    font-weight: 500;
     display: none;
-    line-height: 1.3;
+    line-height: 1.35;
+    text-align: center;
     box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   }
 </style>
 </head>
 <body>
   <div class="row">
-    <button id="speakBtn" type="button">🎤 Tap to Speak</button>
-    <button id="sendVoice" type="button">Send voice →</button>
+    <button id="speakBtn" type="button">Tap to Speak</button>
   </div>
+  <div id="status">Tap the microphone to speak</div>
   <div id="transcript"></div>
-  <div id="status">Tap the mic and speak to talk to your buddy.</div>
 
   <script>
     const speakBtn = document.getElementById('speakBtn');
-    const sendBtn = document.getElementById('sendVoice');
     const statusEl = document.getElementById('status');
     const transcriptEl = document.getElementById('transcript');
     let recognition = null;
@@ -358,8 +414,8 @@ components.html(
 
       recognition.onstart = () => {
         speakBtn.classList.add('listening');
-        speakBtn.textContent = '🔴 Listening…';
-        statusEl.textContent = 'Speak now…';
+        statusEl.textContent = 'Listening...';
+        transcriptEl.style.display = 'none';
         finalText = '';
       };
 
@@ -374,7 +430,6 @@ components.html(
         if (display) {
           transcriptEl.style.display = 'block';
           transcriptEl.textContent = display;
-          sendBtn.style.display = 'inline-block';
         }
       };
 
@@ -385,14 +440,17 @@ components.html(
 
       recognition.onend = () => {
         resetBtn();
-        if (finalText.trim()) {
-          statusEl.textContent = 'Got it! Tap "Send voice" or speak again.';
+        const text = (finalText || transcriptEl.textContent).trim();
+        if (text) {
+          statusEl.textContent = 'Sending message to buddy...';
+          sendVoiceMessage(text);
+        } else {
+          statusEl.textContent = 'Tap the microphone to speak';
         }
       };
 
       function resetBtn() {
         speakBtn.classList.remove('listening');
-        speakBtn.textContent = '🎤 Tap to Speak';
       }
 
       speakBtn.addEventListener('click', () => {
@@ -401,40 +459,62 @@ components.html(
         }
       });
 
-      sendBtn.addEventListener('click', () => {
-        const text = (finalText || transcriptEl.textContent).trim();
-        if (!text) return;
+      function sendVoiceMessage(text) {
         try {
           speakBtn.disabled = true;
-          sendBtn.disabled = true;
-          statusEl.textContent = 'Sending voice message to buddy...';
           const top = window.parent.location;
           const url = new URL(top.href);
           url.searchParams.set('voice', text);
           top.href = url.toString();
         } catch (_) {
-          statusEl.textContent = 'Could not send — type in the chat box instead.';
+          statusEl.textContent = 'Error sending — please type instead.';
           speakBtn.disabled = false;
-          sendBtn.disabled = false;
         }
-      });
+      }
     }
   </script>
 </body>
 </html>
     """,
-    height=130,
+    height=160,
 )
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Chat history display
+# Siri-like visual container (Only last exchange)
 # ---------------------------------------------------------------------------
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"], avatar="🧑" if msg["role"] == "user" else "🤖"):
-        st.markdown(msg["content"])
-        if msg.get("saved_facts"):
-            st.caption("💾 Saved to memory: " + ", ".join(msg["saved_facts"]))
+if st.session_state.messages:
+    last_user = None
+    last_assistant = None
+    
+    for msg in reversed(st.session_state.messages):
+        if msg["role"] == "user" and not last_user:
+            last_user = msg["content"]
+        elif msg["role"] == "assistant" and not last_assistant:
+            last_assistant = msg
+            
+    st.markdown('<div class="siri-container">', unsafe_allow_html=True)
+    if last_user:
+        st.markdown(f'<div class="siri-user-query">“ {html.escape(last_user)} ”</div>', unsafe_allow_html=True)
+    if last_assistant:
+        st.markdown(f'<div class="siri-assistant-reply">{last_assistant["content"]}</div>', unsafe_allow_html=True)
+        if last_assistant.get("saved_facts"):
+            st.markdown(
+                f'<div class="siri-memory-tag">💾 Remembered: {", ".join(html.escape(f) for f in last_assistant["saved_facts"])}</div>',
+                unsafe_allow_html=True
+            )
+    st.markdown('</div>', unsafe_allow_html=True)
+else:
+    st.markdown(
+        """
+        <div class="siri-container" style="text-align: center; margin-top: 1rem;">
+            <div class="siri-assistant-reply" style="font-size: 1.3rem; color: #64748b; font-weight: 500;">
+                How can I help you today?
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # ---------------------------------------------------------------------------
 # Process voice or typed input
