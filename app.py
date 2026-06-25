@@ -33,7 +33,7 @@ st.set_page_config(
 
 PASTEL_CSS = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     
     html, body, [class*="css"], .stApp {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -41,7 +41,7 @@ PASTEL_CSS = """
     
     /* Remove Streamlit default main body extra padding */
     [data-testid="block-container"] {
-        padding: 1.5rem 1rem !important;
+        padding: 1rem 1rem !important;
         max-width: 44rem !important;
     }
     
@@ -59,18 +59,30 @@ PASTEL_CSS = """
     }
     
     .buddy-header h1 {
-        font-size: clamp(1.6rem, 4vw, 2.1rem);
-        font-weight: 700;
-        background: linear-gradient(90deg, #8b5cf6, #0d9488);
+        font-size: clamp(1.8rem, 4.5vw, 2.3rem);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        background: linear-gradient(135deg, #7c3aed, #8b5cf6, #3b82f6, #0d9488);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        animation: textShimmer 5s linear infinite;
         margin-bottom: 0.15rem;
+    }
+    
+    @keyframes textShimmer {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
     
     .buddy-header p {
         color: #64748b;
         font-size: clamp(0.85rem, 2.5vw, 0.95rem);
         font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     [data-testid="stChatMessage"] {
@@ -159,10 +171,17 @@ PASTEL_CSS = """
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 1rem;
-        margin-top: 0.5rem;
+        padding: 2.25rem;
+        margin-top: 1rem;
         text-align: center;
         width: 100%;
+        background: rgba(255, 255, 255, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 24px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 10px 30px -5px rgba(139, 92, 246, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
+        transition: all 0.3s ease;
     }
     
     .siri-user-query {
@@ -170,7 +189,7 @@ PASTEL_CSS = """
         color: #8b5cf6;
         font-style: italic;
         font-weight: 500;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1rem;
         max-width: 85%;
         opacity: 0.85;
         animation: fadeIn 0.4s ease-out;
@@ -180,7 +199,7 @@ PASTEL_CSS = """
         font-size: 1.35rem;
         color: #1e293b;
         font-weight: 600;
-        line-height: 1.4;
+        line-height: 1.45;
         max-width: 90%;
         margin-bottom: 0.5rem;
         animation: fadeIn 0.6s ease-out;
@@ -193,7 +212,7 @@ PASTEL_CSS = """
         border: 1px solid #ccfbfe;
         border-radius: 8px;
         padding: 4px 10px;
-        margin-top: 0.4rem;
+        margin-top: 0.5rem;
         display: inline-block;
     }
     
@@ -246,8 +265,15 @@ st.markdown(
     """
     <div class="buddy-header">
         <h1>🤖 AI Agent Buddy</h1>
-        <p>Cloud brain · Local memory · Voice enabled</p>
+        <p><span style="display:inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #10b981; animation: siriDotPulse 2s infinite;"></span>Cloud brain · Local memory · Voice enabled</p>
     </div>
+    <style>
+        @keyframes siriDotPulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+    </style>
     """,
     unsafe_allow_html=True,
 )
@@ -299,6 +325,7 @@ buddy: AIBuddy = st.session_state.buddy
 # ---------------------------------------------------------------------------
 # Voice input component (Web Speech API — SpeechRecognition)
 # -------------------------------------------------------st.markdown('<div class="voice-panel">', unsafe_allow_html=True)
+st.markdown('<div class="voice-panel">', unsafe_allow_html=True)
 components.html(
     """
 <!DOCTYPE html>
@@ -327,47 +354,77 @@ components.html(
     width: 100%; 
   }
   #speakBtn {
-    width: 85px;
-    height: 85px;
+    width: 80px;
+    height: 80px;
     border: none;
     border-radius: 50%;
     font-size: 0rem;
     cursor: pointer;
-    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6, #60a5fa, #38bdf8);
+    background-size: 300% 300%;
     color: white;
-    box-shadow: 0 8px 16px rgba(139, 92, 246, 0.25);
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25), 0 0 20px rgba(96, 165, 250, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     outline: none;
+    position: relative;
+    animation: gradientShift 6s ease infinite;
     touch-action: manipulation;
   }
   #speakBtn::before {
+    content: "";
+    position: absolute;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6, #60a5fa, #38bdf8);
+    z-index: -1;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+  }
+  #speakBtn::after {
     content: "🎤";
-    font-size: 2.2rem;
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
   }
   #speakBtn:active { transform: scale(0.95); }
   #speakBtn.listening {
-    background: linear-gradient(135deg, #f87171, #ef4444);
-    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
-    animation: siriPulse 1.5s infinite ease-in-out;
+    animation: gradientShift 2s ease infinite, siriScale 2s infinite ease-in-out;
+    box-shadow: 0 0 35px rgba(139, 92, 246, 0.4), 0 0 50px rgba(96, 165, 250, 0.25);
   }
   #speakBtn.listening::before {
-    content: "🔴";
-    font-size: 2rem;
+    animation: siriRing 1.5s infinite cubic-bezier(0.25, 0, 0, 1);
+    opacity: 0.8;
   }
-  @keyframes siriPulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-    70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  #speakBtn.listening::after {
+    content: "⚡";
+    font-size: 1.8rem;
+    animation: spinIcon 3s linear infinite;
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes siriScale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  @keyframes siriRing {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.45); opacity: 0; }
+  }
+  @keyframes spinIcon {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
   #status {
     width: 100%;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: #64748b;
     text-align: center;
-    margin-top: 6px;
+    margin-top: 8px;
     font-weight: 500;
   }
   #transcript {
@@ -386,11 +443,44 @@ components.html(
     text-align: center;
     box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   }
+  
+  /* Bouncing voice bars inside STT element */
+  #wave-container {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    margin-top: 8px;
+    height: 16px;
+  }
+  .bar {
+    width: 3px;
+    height: 5px;
+    background: #8b5cf6;
+    border-radius: 99px;
+    animation: bounceBar 0.8s ease-in-out infinite alternate;
+  }
+  .bar:nth-child(2) { animation-delay: 0.15s; background: #a78bfa; }
+  .bar:nth-child(3) { animation-delay: 0.3s; background: #60a5fa; }
+  .bar:nth-child(4) { animation-delay: 0.45s; background: #38bdf8; }
+  .bar:nth-child(5) { animation-delay: 0.6s; background: #0d9488; }
+  
+  @keyframes bounceBar {
+    0% { height: 4px; }
+    100% { height: 16px; }
+  }
 </style>
 </head>
 <body>
   <div class="row">
     <button id="speakBtn" type="button">Tap to Speak</button>
+  </div>
+  <div id="wave-container">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
   </div>
   <div id="status">Tap the microphone to speak</div>
   <div id="transcript"></div>
@@ -399,6 +489,7 @@ components.html(
     const speakBtn = document.getElementById('speakBtn');
     const statusEl = document.getElementById('status');
     const transcriptEl = document.getElementById('transcript');
+    const waveContainer = document.getElementById('wave-container');
     let recognition = null;
     let finalText = '';
 
@@ -416,6 +507,7 @@ components.html(
         speakBtn.classList.add('listening');
         statusEl.textContent = 'Listening...';
         transcriptEl.style.display = 'none';
+        waveContainer.style.display = 'flex';
         finalText = '';
       };
 
@@ -451,6 +543,7 @@ components.html(
 
       function resetBtn() {
         speakBtn.classList.remove('listening');
+        waveContainer.style.display = 'none';
       }
 
       speakBtn.addEventListener('click', () => {
@@ -476,7 +569,7 @@ components.html(
 </body>
 </html>
     """,
-    height=160,
+    height=180,
 )
 st.markdown("</div>", unsafe_allow_html=True)
 
