@@ -31,83 +31,134 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-DARK_CSS = """
+PASTEL_CSS = """
 <style>
-    .stApp {
-        background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
-        color: #e8e8f0;
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    
+    html, body, [class*="css"], .stApp {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
+    
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fb 0%, #eef2f7 100%);
+        color: #334155;
+    }
+    
     [data-testid="stHeader"] { background: transparent; }
     [data-testid="stToolbar"] { display: none; }
+    
     .buddy-header {
         text-align: center;
-        padding: 1rem 0 0.5rem;
+        padding: 1.5rem 0 1rem;
     }
+    
     .buddy-header h1 {
-        font-size: clamp(1.6rem, 4vw, 2.2rem);
-        background: linear-gradient(90deg, #7c3aed, #06b6d4);
+        font-size: clamp(1.8rem, 5vw, 2.4rem);
+        font-weight: 700;
+        background: linear-gradient(90deg, #8b5cf6, #0d9488);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.25rem;
     }
+    
     .buddy-header p {
-        color: #94a3b8;
-        font-size: clamp(0.85rem, 2.5vw, 1rem);
+        color: #64748b;
+        font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+        font-weight: 500;
     }
+    
     [data-testid="stChatMessage"] {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 0.75rem 1rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        border-radius: 20px;
+        padding: 0.85rem 1.1rem;
         margin-bottom: 0.75rem;
+        color: #1e293b !important;
     }
+    
     [data-testid="stChatMessage"][data-testid*="user"] {
-        background: rgba(124, 58, 237, 0.12);
-        border-color: rgba(124, 58, 237, 0.25);
+        background: #f3f0ff !important;
+        border-color: #e9e3ff !important;
+        color: #4c1d95 !important;
     }
+    
+    [data-testid="stChatMessage"] p, [data-testid="stChatMessage"] span, [data-testid="stChatMessage"] div {
+        color: inherit !important;
+        font-size: 0.96rem;
+        line-height: 1.5;
+    }
+    
     [data-testid="stChatInput"] textarea {
-        background: rgba(255, 255, 255, 0.06) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        color: #f1f5f9 !important;
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #1e293b !important;
         border-radius: 24px !important;
+        box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05) !important;
+        font-size: 0.95rem !important;
     }
+    
     [data-testid="stChatInput"] textarea:focus {
-        border-color: #7c3aed !important;
-        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25) !important;
+        border-color: #8b5cf6 !important;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
     }
-    .memory-chip {
-        display: inline-block;
-        background: rgba(6, 182, 212, 0.15);
-        border: 1px solid rgba(6, 182, 212, 0.3);
-        border-radius: 999px;
-        padding: 0.2rem 0.75rem;
-        margin: 0.15rem;
-        font-size: 0.8rem;
-        color: #67e8f9;
-    }
+    
     .voice-panel {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 0.5rem;
-        margin-bottom: 1rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 0.75rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
+    
     div[data-testid="stSidebar"] {
-        background: #12121f;
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
     }
+    
+    /* Sidebar text colors */
+    div[data-testid="stSidebar"] h3 {
+        color: #1e293b !important;
+        font-weight: 600;
+        font-size: 1.15rem;
+    }
+    
+    div[data-testid="stSidebar"] p, div[data-testid="stSidebar"] span {
+        color: #475569 !important;
+        font-size: 0.9rem;
+    }
+    
+    /* Custom style for streamlit buttons inside columns */
+    div[data-testid="stSidebar"] button {
+        border-radius: 8px !important;
+        border: 1px solid #e2e8f0 !important;
+        background-color: #ffffff !important;
+        color: #ef4444 !important;
+        padding: 2px 6px !important;
+        font-size: 0.8rem !important;
+        transition: all 0.2s;
+    }
+    
+    div[data-testid="stSidebar"] button:hover {
+        background-color: #fef2f2 !important;
+        border-color: #fee2e2 !important;
+        transform: scale(1.05);
+    }
+
     @media (max-width: 640px) {
         [data-testid="stChatMessage"] {
-            padding: 0.5rem 0.75rem !important;
+            padding: 0.65rem 0.85rem !important;
             margin-bottom: 0.5rem !important;
-            border-radius: 12px !important;
+            border-radius: 16px !important;
         }
         .buddy-header {
-            padding: 0.5rem 0 !important;
+            padding: 0.75rem 0 !important;
         }
     }
 </style>
 """
-st.markdown(DARK_CSS, unsafe_allow_html=True)
+st.markdown(PASTEL_CSS, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Session state
@@ -158,7 +209,7 @@ with st.sidebar:
                 col1, col2 = st.columns([6, 1])
                 with col1:
                     st.markdown(
-                        f'<div style="background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; color: #67e8f9; line-height: 1.3; margin-bottom: 4px;">{html.escape(fact)}</div>',
+                        f'<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; color: #475569; line-height: 1.3; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">{html.escape(fact)}</div>',
                         unsafe_allow_html=True
                     )
                 with col2:
@@ -201,11 +252,12 @@ components.html(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: transparent;
-    color: #e2e8f0;
+    color: #475569;
     padding: 8px 12px;
   }
   .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -215,52 +267,60 @@ components.html(
     padding: 12px 20px;
     border: none;
     border-radius: 999px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
     color: white;
+    box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.2);
     transition: transform 0.15s, box-shadow 0.15s;
     touch-action: manipulation;
   }
   #speakBtn:active { transform: scale(0.97); }
   #speakBtn.listening {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
     animation: pulse 1.2s infinite;
   }
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
-    50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.7); }
+    0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); }
+    50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.5); }
   }
   #sendVoice {
     padding: 12px 18px;
-    border: 1px solid rgba(6, 182, 212, 0.5);
+    border: 1px solid #99f6e4;
     border-radius: 999px;
-    background: rgba(6, 182, 212, 0.15);
-    color: #67e8f9;
+    background: #f0fdfa;
+    color: #0d9488;
     font-weight: 600;
     cursor: pointer;
     display: none;
     touch-action: manipulation;
+    transition: all 0.2s;
+  }
+  #sendVoice:hover {
+    background: #ccfbfe;
   }
   #status {
     width: 100%;
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: #64748b;
     min-height: 1.2em;
     margin-top: 8px;
+    font-weight: 500;
   }
   #transcript {
     width: 100%;
     margin-top: 8px;
     padding: 10px 14px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.05);
-    color: #f1f5f9;
-    font-size: 0.95rem;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.92rem;
+    font-family: inherit;
     display: none;
+    resize: none;
   }
 </style>
 </head>
