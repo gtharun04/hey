@@ -39,6 +39,12 @@ PASTEL_CSS = """
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     
+    /* Remove Streamlit default main body extra padding */
+    [data-testid="block-container"] {
+        padding: 1.5rem 1rem !important;
+        max-width: 44rem !important;
+    }
+    
     .stApp {
         background: linear-gradient(135deg, #f5f7fb 0%, #eef2f7 100%);
         color: #334155;
@@ -49,67 +55,66 @@ PASTEL_CSS = """
     
     .buddy-header {
         text-align: center;
-        padding: 1.5rem 0 1rem;
+        padding: 0.75rem 0 0.5rem;
     }
     
     .buddy-header h1 {
-        font-size: clamp(1.8rem, 5vw, 2.4rem);
+        font-size: clamp(1.6rem, 4vw, 2.1rem);
         font-weight: 700;
         background: linear-gradient(90deg, #8b5cf6, #0d9488);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.15rem;
     }
     
     .buddy-header p {
         color: #64748b;
-        font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+        font-size: clamp(0.85rem, 2.5vw, 0.95rem);
         font-weight: 500;
     }
     
     [data-testid="stChatMessage"] {
         background: #ffffff;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        border-radius: 20px;
-        padding: 0.85rem 1.1rem;
-        margin-bottom: 0.75rem;
+        border: 1px solid #f1f5f9;
+        box-shadow: none;
+        border-radius: 16px;
+        padding: 0.65rem 0.9rem;
+        margin-bottom: 0.5rem;
         color: #1e293b !important;
     }
     
     [data-testid="stChatMessage"][data-testid*="user"] {
         background: #f3f0ff !important;
-        border-color: #e9e3ff !important;
+        border-color: #ede9fe !important;
         color: #4c1d95 !important;
     }
     
     [data-testid="stChatMessage"] p, [data-testid="stChatMessage"] span, [data-testid="stChatMessage"] div {
         color: inherit !important;
-        font-size: 0.96rem;
-        line-height: 1.5;
+        font-size: 0.92rem;
+        line-height: 1.45;
     }
     
     [data-testid="stChatInput"] textarea {
         background: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
+        border: 1px solid #e2e8f0 !important;
         color: #1e293b !important;
-        border-radius: 24px !important;
-        box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05) !important;
-        font-size: 0.95rem !important;
+        border-radius: 20px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+        font-size: 0.92rem !important;
     }
     
     [data-testid="stChatInput"] textarea:focus {
         border-color: #8b5cf6 !important;
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
+        box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1) !important;
     }
     
     .voice-panel {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 20px;
-        padding: 0.75rem;
-        margin-bottom: 1.25rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin-bottom: 0.5rem;
+        box-shadow: none;
     }
     
     div[data-testid="stSidebar"] {
@@ -121,39 +126,38 @@ PASTEL_CSS = """
     div[data-testid="stSidebar"] h3 {
         color: #1e293b !important;
         font-weight: 600;
-        font-size: 1.15rem;
+        font-size: 1.05rem;
     }
     
     div[data-testid="stSidebar"] p, div[data-testid="stSidebar"] span {
         color: #475569 !important;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
     
     /* Custom style for streamlit buttons inside columns */
     div[data-testid="stSidebar"] button {
-        border-radius: 8px !important;
+        border-radius: 6px !important;
         border: 1px solid #e2e8f0 !important;
         background-color: #ffffff !important;
         color: #ef4444 !important;
-        padding: 2px 6px !important;
-        font-size: 0.8rem !important;
+        padding: 1px 4px !important;
+        font-size: 0.75rem !important;
         transition: all 0.2s;
     }
     
     div[data-testid="stSidebar"] button:hover {
         background-color: #fef2f2 !important;
         border-color: #fee2e2 !important;
-        transform: scale(1.05);
     }
 
     @media (max-width: 640px) {
         [data-testid="stChatMessage"] {
-            padding: 0.65rem 0.85rem !important;
-            margin-bottom: 0.5rem !important;
-            border-radius: 16px !important;
+            padding: 0.55rem 0.75rem !important;
+            margin-bottom: 0.4rem !important;
+            border-radius: 12px !important;
         }
         .buddy-header {
-            padding: 0.75rem 0 !important;
+            padding: 0.5rem 0 !important;
         }
     }
 </style>
@@ -204,18 +208,18 @@ with st.sidebar:
     if st.session_state.buddy:
         facts = st.session_state.buddy.load_facts()
         if facts:
-            st.markdown("What I remember about you (click ❌ to delete):")
-            for i, fact in enumerate(facts):
-                col1, col2 = st.columns([6, 1])
-                with col1:
-                    st.markdown(
-                        f'<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; color: #475569; line-height: 1.3; margin-bottom: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">{html.escape(fact)}</div>',
-                        unsafe_allow_html=True
-                    )
-                with col2:
-                    if st.button("❌", key=f"del_{i}", help="Delete this fact", use_container_width=True):
-                        st.session_state.buddy.delete_fact(fact)
-                        st.rerun()
+            with st.expander("Click to view/manage facts", expanded=False):
+                for i, fact in enumerate(facts):
+                    col1, col2 = st.columns([5, 1])
+                    with col1:
+                        st.markdown(
+                            f'<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; font-size: 0.78rem; color: #475569; line-height: 1.25; margin-bottom: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.01);">{html.escape(fact)}</div>',
+                            unsafe_allow_html=True
+                        )
+                    with col2:
+                        if st.button("❌", key=f"del_{i}", help="Delete this fact", use_container_width=True):
+                            st.session_state.buddy.delete_fact(fact)
+                            st.rerun()
         else:
             st.caption("No personal facts saved yet. Tell me about yourself!")
         st.markdown("---")
@@ -258,41 +262,42 @@ components.html(
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: transparent;
     color: #475569;
-    padding: 8px 12px;
+    padding: 2px 4px;
   }
-  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   #speakBtn {
     flex: 1;
-    min-width: 140px;
-    padding: 12px 20px;
+    min-width: 130px;
+    padding: 10px 18px;
     border: none;
     border-radius: 999px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     background: linear-gradient(135deg, #a78bfa, #8b5cf6);
     color: white;
-    box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.15);
     transition: transform 0.15s, box-shadow 0.15s;
     touch-action: manipulation;
   }
   #speakBtn:active { transform: scale(0.97); }
   #speakBtn.listening {
     background: linear-gradient(135deg, #f87171, #ef4444);
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
     animation: pulse 1.2s infinite;
   }
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); }
-    50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.5); }
+    0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
   }
   #sendVoice {
-    padding: 12px 18px;
+    padding: 10px 16px;
     border: 1px solid #99f6e4;
     border-radius: 999px;
     background: #f0fdfa;
     color: #0d9488;
     font-weight: 600;
+    font-size: 0.88rem;
     cursor: pointer;
     display: none;
     touch-action: manipulation;
@@ -303,24 +308,25 @@ components.html(
   }
   #status {
     width: 100%;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #64748b;
-    min-height: 1.2em;
-    margin-top: 8px;
+    min-height: 1em;
+    margin-top: 6px;
     font-weight: 500;
   }
   #transcript {
     width: 100%;
-    margin-top: 8px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
+    margin-top: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
     color: #334155;
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     font-family: inherit;
     display: none;
-    resize: none;
+    line-height: 1.3;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   }
 </style>
 </head>
@@ -329,8 +335,8 @@ components.html(
     <button id="speakBtn" type="button">🎤 Tap to Speak</button>
     <button id="sendVoice" type="button">Send voice →</button>
   </div>
-  <textarea id="transcript" rows="2" placeholder="Your speech will appear here…" readonly></textarea>
-  <div id="status">Tap the mic and speak — works best in Chrome/Edge on HTTPS or localhost.</div>
+  <div id="transcript"></div>
+  <div id="status">Tap the mic and speak to talk to your buddy.</div>
 
   <script>
     const speakBtn = document.getElementById('speakBtn');
@@ -367,7 +373,7 @@ components.html(
         const display = (finalText + interim).trim();
         if (display) {
           transcriptEl.style.display = 'block';
-          transcriptEl.value = display;
+          transcriptEl.textContent = display;
           sendBtn.style.display = 'inline-block';
         }
       };
@@ -396,7 +402,7 @@ components.html(
       });
 
       sendBtn.addEventListener('click', () => {
-        const text = (finalText || transcriptEl.value).trim();
+        const text = (finalText || transcriptEl.textContent).trim();
         if (!text) return;
         try {
           speakBtn.disabled = true;
