@@ -309,6 +309,7 @@ components.html(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -340,7 +341,7 @@ components.html(
     background-size: 300% 300%;
     color: white;
     box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25), 0 0 20px rgba(96, 165, 250, 0.15);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -364,9 +365,8 @@ components.html(
     font-size: 2rem;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
   }
-  #speakBtn:active { transform: scale(0.95); }
   #speakBtn.listening {
-    animation: gradientShift 2s ease infinite, siriScale 2s infinite ease-in-out;
+    animation: gradientShift 2s ease infinite;
     box-shadow: 0 0 35px rgba(139, 92, 246, 0.4), 0 0 50px rgba(96, 165, 250, 0.25);
   }
   #speakBtn.listening::before {
@@ -382,10 +382,6 @@ components.html(
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
-  }
-  @keyframes siriScale {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.08); }
   }
   @keyframes siriRing {
     0% { transform: scale(1); opacity: 0.8; }
@@ -433,16 +429,6 @@ components.html(
     height: 5px;
     background: #8b5cf6;
     border-radius: 99px;
-    animation: bounceBar 0.8s ease-in-out infinite alternate;
-  }
-  .bar:nth-child(2) { animation-delay: 0.15s; background: #a78bfa; }
-  .bar:nth-child(3) { animation-delay: 0.3s; background: #60a5fa; }
-  .bar:nth-child(4) { animation-delay: 0.45s; background: #38bdf8; }
-  .bar:nth-child(5) { animation-delay: 0.6s; background: #0d9488; }
-  
-  @keyframes bounceBar {
-    0% { height: 4px; }
-    100% { height: 16px; }
   }
 </style>
 </head>
@@ -451,11 +437,11 @@ components.html(
     <button id="speakBtn" type="button">Tap to Speak</button>
   </div>
   <div id="wave-container">
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
+    <div class="bar" style="background:#8b5cf6"></div>
+    <div class="bar" style="background:#a78bfa"></div>
+    <div class="bar" style="background:#60a5fa"></div>
+    <div class="bar" style="background:#38bdf8"></div>
+    <div class="bar" style="background:#0d9488"></div>
   </div>
   <div id="status">Tap the microphone to speak</div>
   <div id="transcript"></div>
@@ -467,6 +453,19 @@ components.html(
     const waveContainer = document.getElementById('wave-container');
     let recognition = null;
     let finalText = '';
+    let waveTimeline = null;
+
+    // Hover magnetic animation with GSAP
+    speakBtn.addEventListener('mouseenter', () => {
+      if (!speakBtn.classList.contains('listening')) {
+        gsap.to(speakBtn, { scale: 1.08, duration: 0.3, ease: "power2.out" });
+      }
+    });
+    speakBtn.addEventListener('mouseleave', () => {
+      if (!speakBtn.classList.contains('listening')) {
+        gsap.to(speakBtn, { scale: 1, duration: 0.3, ease: "power2.out" });
+      }
+    });
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -478,11 +477,36 @@ components.html(
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
+      // GSAP wave animation helper
+      function initWaveAnimation() {
+        waveTimeline = gsap.timeline({ repeat: -1 });
+        gsap.utils.toArray('.bar').forEach((bar, i) => {
+          waveTimeline.to(bar, {
+            height: 18,
+            duration: 0.4 + (i * 0.05),
+            ease: "sine.inOut",
+            repeat: -1,
+            yoyo: true
+          }, 0);
+        });
+        waveTimeline.pause();
+      }
+      initWaveAnimation();
+
       recognition.onstart = () => {
         speakBtn.classList.add('listening');
+        
+        // GSAP transition for listening start
+        gsap.to(speakBtn, { scale: 1.15, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+        gsap.fromTo(statusEl, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.3 });
+        
         statusEl.textContent = 'Listening...';
         transcriptEl.style.display = 'none';
         waveContainer.style.display = 'flex';
+        
+        if (waveTimeline) {
+          waveTimeline.play();
+        }
         finalText = '';
       };
 
@@ -495,7 +519,10 @@ components.html(
         }
         const display = (finalText + interim).trim();
         if (display) {
-          transcriptEl.style.display = 'block';
+          if (transcriptEl.style.display === 'none') {
+            transcriptEl.style.display = 'block';
+            gsap.fromTo(transcriptEl, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" });
+          }
           transcriptEl.textContent = display;
         }
       };
@@ -518,7 +545,12 @@ components.html(
 
       function resetBtn() {
         speakBtn.classList.remove('listening');
+        gsap.to(speakBtn, { scale: 1, duration: 0.4, ease: "power2.out" });
         waveContainer.style.display = 'none';
+        if (waveTimeline) {
+          waveTimeline.pause();
+        }
+        gsap.to('.bar', { height: 5, duration: 0.3, ease: "power2.out" });
       }
 
       speakBtn.addEventListener('click', () => {
