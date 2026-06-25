@@ -13,6 +13,7 @@ Default model: llama-3.3-70b-versatile (replacement for deprecated llama3-70b-81
 
 from __future__ import annotations
 
+import base64
 import html
 import json
 
@@ -20,6 +21,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from agent import AIBuddy, DEFAULT_MODEL
+
+def get_base64_image(path: str) -> str:
+    try:
+        with open(path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+    except Exception:
+        return ""
 
 # ---------------------------------------------------------------------------
 # Page config & dark theme
@@ -45,12 +53,21 @@ PASTEL_CSS = """
         max-width: 44rem !important;
     }
     
-    .stApp {
-        background: linear-gradient(135deg, #f5f7fb 0%, #eef2f7 100%);
-        color: #334155;
+    /* Ultimate app containers for full-bleed dark gradient background */
+    [data-testid="stAppViewContainer"], .stApp, .main {
+        background: radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                    #0b0f19 !important;
+        color: #f1f5f9 !important;
+        transition: background 0.5s ease;
+    }
+
+    /* Force section layout wrapper to be transparent */
+    [data-testid="stAppViewContainer"] > section {
+        background: transparent !important;
     }
     
-    [data-testid="stHeader"] { background: transparent; }
+    [data-testid="stHeader"] { background: transparent !important; }
     [data-testid="stToolbar"] { display: none; }
     
     .buddy-header {
@@ -58,11 +75,30 @@ PASTEL_CSS = """
         padding: 1.5rem 0 0.5rem;
     }
     
+    .header-logo-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 0.25rem;
+    }
+    
+    .header-logo {
+        width: 72px;
+        height: 72px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.6));
+        animation: logoFloat 4s ease-in-out infinite;
+    }
+    
+    @keyframes logoFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+    }
+    
     .buddy-header h1 {
         font-size: clamp(1.8rem, 4.5vw, 2.3rem);
         font-weight: 800;
         letter-spacing: -0.025em;
-        background: linear-gradient(135deg, #7c3aed, #8b5cf6, #3b82f6, #0d9488);
+        background: linear-gradient(135deg, #c084fc, #8b5cf6, #3b82f6, #06b6d4);
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -77,7 +113,7 @@ PASTEL_CSS = """
     }
     
     .buddy-header p {
-        color: #64748b;
+        color: #94a3b8;
         font-size: clamp(0.85rem, 2.5vw, 0.95rem);
         font-weight: 500;
         display: flex;
@@ -85,25 +121,45 @@ PASTEL_CSS = """
         justify-content: center;
     }
     
-    /* Make chat input blend in transparently */
-    [data-testid="stChatInput"] {
+    /* Strip Streamlit's default white docked background for the chat input using multiple parent selectors */
+    div:has(> [data-testid="stChatInput"]),
+    div:has(> div > [data-testid="stChatInput"]),
+    div[class*="stChatInput"] {
+        background-color: transparent !important;
         background: transparent !important;
-        padding-bottom: 2rem !important;
+        border: none !important;
+        box-shadow: none !important;
     }
     
-    [data-testid="stChatInput"] textarea {
-        background: rgba(255, 255, 255, 0.7) !important;
-        border: 1px solid rgba(255, 255, 255, 0.5) !important;
-        color: #1e293b !important;
+    /* Make chat input container blend in transparently with a glossy glass effect */
+    [data-testid="stChatInput"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 20px !important;
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+        padding: 4px 12px !important;
+    }
+    
+    /* Make all inner wrappers transparent */
+    [data-testid="stChatInput"] div {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Textarea styling */
+    [data-testid="stChatInput"] textarea {
+        background: transparent !important;
+        color: #f8fafc !important;
         font-size: 0.92rem !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+        border: none !important;
     }
     
     [data-testid="stChatInput"] textarea:focus {
-        border-color: #8b5cf6 !important;
-        box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1) !important;
+        box-shadow: none !important;
     }
     
     .voice-panel {
@@ -118,39 +174,44 @@ PASTEL_CSS = """
     }
     
     div[data-testid="stSidebar"] {
-        background: #f8fafc;
-        border-right: 1px solid #e2e8f0;
+        background: rgba(11, 15, 25, 0.7) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
     }
     
     /* Sidebar text colors */
     div[data-testid="stSidebar"] h3 {
-        color: #1e293b !important;
+        color: #f8fafc !important;
         font-weight: 600;
         font-size: 1.05rem;
     }
     
     div[data-testid="stSidebar"] p, div[data-testid="stSidebar"] span {
-        color: #475569 !important;
+        color: #94a3b8 !important;
         font-size: 0.85rem;
     }
     
     /* Custom style for streamlit buttons inside columns */
     div[data-testid="stSidebar"] button {
         border-radius: 6px !important;
-        border: 1px solid #e2e8f0 !important;
-        background-color: #ffffff !important;
-        color: #ef4444 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background-color: rgba(255, 255, 255, 0.04) !important;
+        color: #f43f5e !important;
         padding: 1px 4px !important;
         font-size: 0.75rem !important;
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     div[data-testid="stSidebar"] button:hover {
-        background-color: #fef2f2 !important;
-        border-color: #fee2e2 !important;
+        background-color: rgba(244, 63, 94, 0.15) !important;
+        border-color: rgba(244, 63, 94, 0.3) !important;
+        color: #fb7185 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15);
     }
 
-    /* Siri-like borderless visual container */
+    /* Siri-like borderless visual container with subtle glossy tag support */
     .siri-container {
         display: flex;
         flex-direction: column;
@@ -167,38 +228,118 @@ PASTEL_CSS = """
     
     .siri-user-query {
         font-size: 1.15rem;
-        color: #8b5cf6;
+        color: #c084fc;
         font-style: italic;
         font-weight: 500;
         margin-bottom: 1.25rem;
         max-width: 85%;
-        opacity: 0.85;
-        animation: fadeIn 0.4s ease-out;
+        opacity: 0;
+        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
     }
     
     .siri-assistant-reply {
         font-size: 1.6rem;
-        color: #1e293b;
+        color: #f1f5f9;
         font-weight: 700;
         line-height: 1.45;
         max-width: 90%;
         margin-bottom: 0.5rem;
-        animation: fadeIn 0.6s ease-out;
+        opacity: 0;
+        animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
     }
     
     .siri-memory-tag {
         font-size: 0.75rem;
-        color: #0d9488;
-        background: rgba(13, 148, 136, 0.08);
-        border: 1px solid rgba(13, 148, 136, 0.2);
+        color: #2dd4bf;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 99px;
         padding: 4px 12px;
         margin-top: 0.75rem;
         display: inline-block;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        opacity: 0;
+        animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+    }
+    
+    /* Facts card design */
+    .fact-card {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 8px !important;
+        padding: 6px 10px !important;
+        font-size: 0.78rem !important;
+        color: #cbd5e1 !important;
+        line-height: 1.25 !important;
+        margin-bottom: 3px !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    
+    .fact-card:hover {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        transform: scale(1.02);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Empty State Hero Orb */
+    .hero-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem 0;
+        text-align: center;
+        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
+    .floating-orb-wrapper {
+        position: relative;
+        width: clamp(200px, 38vw, 260px);
+        height: clamp(200px, 38vw, 260px);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+    }
+    
+    .hero-orb-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 15px 35px rgba(99, 102, 241, 0.35));
+        animation: floatOrb 6s ease-in-out infinite;
+    }
+    
+    @keyframes floatOrb {
+        0%, 100% {
+            transform: translateY(0) rotate(0deg) scale(1);
+        }
+        50% {
+            transform: translateY(-8px) rotate(1.5deg) scale(1.02);
+        }
+    }
+    
+    .hero-title {
+        font-size: clamp(1.2rem, 3.5vw, 1.45rem);
+        color: #94a3b8;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        opacity: 0.95;
+        background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(8px); }
+        from { opacity: 0; transform: translateY(12px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
@@ -237,22 +378,14 @@ if "voice" in st.query_params:
 # ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
-st.markdown(
-    """
-    <div class="buddy-header">
-        <h1>🤖 AI Agent Buddy</h1>
-        <p><span style="display:inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #10b981; animation: siriDotPulse 2s infinite;"></span>Cloud brain · Local memory · Voice enabled</p>
-    </div>
-    <style>
-        @keyframes siriDotPulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+base64_orb = get_base64_image("assets/ai_orb_illustration.png")
+
+logo_html = ""
+if base64_orb:
+    logo_html = f'<div class="header-logo-container"><img src="data:image/png;base64,{base64_orb}" class="header-logo" alt="Aurora AI Logo"></div>'
+
+header_html = f'<div class="buddy-header">{logo_html}<h1>Aurora AI</h1><p><span style="display:inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #10b981; animation: siriDotPulse 2s infinite;"></span>Empathy engine · Local memory · Voice companion</p></div>'
+st.markdown(header_html, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Sidebar — memory & controls
@@ -267,7 +400,7 @@ with st.sidebar:
                     col1, col2 = st.columns([5, 1])
                     with col1:
                         st.markdown(
-                            f'<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; font-size: 0.78rem; color: #475569; line-height: 1.25; margin-bottom: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.01);">{html.escape(fact)}</div>',
+                            f'<div class="fact-card">{html.escape(fact)}</div>',
                             unsafe_allow_html=True
                         )
                     with col2:
@@ -316,7 +449,7 @@ components.html(
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: transparent;
-    color: #475569;
+    color: #94a3b8;
     padding: 0;
     margin: 0;
     display: flex;
@@ -331,17 +464,17 @@ components.html(
     width: 100%; 
   }
   #speakBtn {
-    width: 80px;
-    height: 80px;
+    width: 84px;
+    height: 84px;
     border: none;
     border-radius: 50%;
     font-size: 0rem;
     cursor: pointer;
-    background: linear-gradient(135deg, #a78bfa, #8b5cf6, #60a5fa, #38bdf8);
+    background: linear-gradient(135deg, #c084fc, #8b5cf6, #3b82f6, #06b6d4);
     background-size: 300% 300%;
     color: white;
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25), 0 0 20px rgba(96, 165, 250, 0.15);
-    transition: box-shadow 0.3s ease;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.35), 0 0 25px rgba(59, 130, 246, 0.2);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -350,34 +483,47 @@ components.html(
     animation: gradientShift 6s ease infinite;
     touch-action: manipulation;
   }
+  
+  /* 3D Glass Sheen reflection overlay for speakBtn */
   #speakBtn::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+  
+  /* Outer expanding ring layer */
+  #speakBtn::after {
     content: "";
     position: absolute;
     top: -4px; left: -4px; right: -4px; bottom: -4px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #a78bfa, #8b5cf6, #60a5fa, #38bdf8);
+    background: linear-gradient(135deg, #c084fc, #8b5cf6, #3b82f6, #06b6d4);
     z-index: -1;
-    opacity: 0.4;
+    opacity: 0.3;
     transition: all 0.3s ease;
   }
-  #speakBtn::after {
-    content: "🎤";
-    font-size: 2rem;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  
+  /* Icon container inside orb */
+  #speakBtn .btn-icon {
+    font-size: 2.1rem;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+    z-index: 1;
+    transition: all 0.3s ease;
   }
+  
   #speakBtn.listening {
     animation: gradientShift 2s ease infinite;
-    box-shadow: 0 0 35px rgba(139, 92, 246, 0.4), 0 0 50px rgba(96, 165, 250, 0.25);
+    box-shadow: 0 0 35px rgba(139, 92, 246, 0.5), 0 0 50px rgba(6, 182, 212, 0.35);
   }
-  #speakBtn.listening::before {
+  #speakBtn.listening::after {
     animation: siriRing 1.5s infinite cubic-bezier(0.25, 0, 0, 1);
     opacity: 0.8;
   }
-  #speakBtn.listening::after {
-    content: "⚡";
-    font-size: 1.8rem;
-    animation: spinIcon 3s linear infinite;
-  }
+  
   @keyframes gradientShift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -387,32 +533,35 @@ components.html(
     0% { transform: scale(1); opacity: 0.8; }
     100% { transform: scale(1.45); opacity: 0; }
   }
-  @keyframes spinIcon {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
   #status {
     width: 100%;
     font-size: 0.8rem;
-    color: #64748b;
+    color: #94a3b8;
     text-align: center;
-    margin-top: 8px;
+    margin-top: 10px;
     font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: color 0.3s;
   }
+  
+  /* Frosted Glossy Glass panel for transcript display */
   #transcript {
     width: 100%;
-    margin-top: 8px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: #8b5cf6;
-    font-size: 1.15rem;
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    color: #c084fc;
+    font-size: 0.92rem;
     font-style: italic;
     font-weight: 500;
     display: none;
-    line-height: 1.4;
+    line-height: 1.35;
     text-align: center;
-    box-shadow: none;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   }
   
   /* Bouncing voice bars inside STT element */
@@ -420,34 +569,36 @@ components.html(
     display: none;
     justify-content: center;
     align-items: center;
-    gap: 3px;
-    margin-top: 8px;
-    height: 16px;
+    gap: 4px;
+    margin-top: 10px;
+    height: 18px;
   }
   .bar {
-    width: 3px;
-    height: 5px;
+    width: 4px;
+    height: 6px;
     background: #8b5cf6;
     border-radius: 99px;
+    transition: background 0.3s;
   }
 </style>
 </head>
 <body>
   <div class="row">
-    <button id="speakBtn" type="button">Tap to Speak</button>
+    <button id="speakBtn" type="button"><span class="btn-icon">🎤</span></button>
   </div>
   <div id="wave-container">
+    <div class="bar" style="background:#c084fc"></div>
     <div class="bar" style="background:#8b5cf6"></div>
-    <div class="bar" style="background:#a78bfa"></div>
-    <div class="bar" style="background:#60a5fa"></div>
-    <div class="bar" style="background:#38bdf8"></div>
-    <div class="bar" style="background:#0d9488"></div>
+    <div class="bar" style="background:#3b82f6"></div>
+    <div class="bar" style="background:#06b6d4"></div>
+    <div class="bar" style="background:#2dd4bf"></div>
   </div>
   <div id="status">Tap the microphone to speak</div>
   <div id="transcript"></div>
 
   <script>
     const speakBtn = document.getElementById('speakBtn');
+    const btnIcon = speakBtn.querySelector('.btn-icon');
     const statusEl = document.getElementById('status');
     const transcriptEl = document.getElementById('transcript');
     const waveContainer = document.getElementById('wave-container');
@@ -498,8 +649,10 @@ components.html(
         
         // GSAP transition for listening start
         gsap.to(speakBtn, { scale: 1.15, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+        gsap.to(btnIcon, { rotation: 45, scale: 0.9, duration: 0.3 });
         gsap.fromTo(statusEl, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.3 });
         
+        btnIcon.textContent = "⚡";
         statusEl.textContent = 'Listening...';
         transcriptEl.style.display = 'none';
         waveContainer.style.display = 'flex';
@@ -546,6 +699,8 @@ components.html(
       function resetBtn() {
         speakBtn.classList.remove('listening');
         gsap.to(speakBtn, { scale: 1, duration: 0.4, ease: "power2.out" });
+        gsap.to(btnIcon, { rotation: 0, scale: 1, duration: 0.3 });
+        btnIcon.textContent = "🎤";
         waveContainer.style.display = 'none';
         if (waveTimeline) {
           waveTimeline.pause();
@@ -615,8 +770,8 @@ if st.session_state.messages:
 else:
     st.markdown(
         """
-        <div class="siri-container" style="text-align: center; margin-top: 1rem;">
-            <div class="siri-assistant-reply" style="font-size: 1.3rem; color: #64748b; font-weight: 500;">
+        <div class="siri-container" style="text-align: center; margin-top: 1.5rem;">
+            <div class="siri-assistant-reply" style="font-size: 1.4rem; color: #94a3b8; font-weight: 500;">
                 How can I help you today?
             </div>
         </div>
